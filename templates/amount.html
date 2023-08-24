@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Company Information</title>
+    <style>
+        #overlay {
+            position: fixed;
+            display: none;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        #response {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #35424a;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: 96%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button[type="submit"] {
+            padding: 10px 20px;
+            background-color: #35424a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        span.close {
+                position: absolute;
+                right: 12px;
+                top: 2px;
+                display: grid;
+                place-items: center;
+                font-size: 24px;
+                cursor: pointer;
+            }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Company Information</h1>
+    </header>
+
+
+    <div id="overlay">
+      
+        <div id="loader">
+            <span id="close-pop" class="close">&times;</span>
+            <p>Your request is being processed. This may take up to 1 minute. Please do not close your browser.</p>
+        </div>
+        <div id="response">
+            <span id="close-pops" class="close">&times;</span>
+            <p> <span id="responseText"></span></p>
+        </div>
+    </div>
+    <div class="container">
+        <p>
+        <h3>Company ID:</h3> {{ company_id }}</p>
+        <p>
+        <h3>Company Name: </h3>{{ company_name }}</p>
+        <h3>Company Address:</h3>
+        <p>Street: {{ address.streetName }}</p>
+        <p>Town: {{ address.town }}</p>
+        <p>Subdivision: {{ address.subdivisionCode }}</p>
+        <p>Country: {{ address.countryCode }}</p>
+        {% for post_code in address.postCodes %}
+        <p>Post Code: {{ post_code.postCodeValue }}</p>
+        {% endfor %}
+
+        <h3>Phone Numbers:</h3>
+        <ul>
+            {% for number in phone_numbers %}
+            <li>{{ number }}</li>
+            {% endfor %}
+        </ul>
+
+        <h3>Website:</h3>
+        <p>{{ website }}</p>
+        <h3> Is this information correct ? </h3><button class="button btnyes"> Yes</button> &nbsp;&nbsp; <button
+            class="button btnno"> No</button>
+
+        </br></br>
+        <form method="POST" , action="/amount" style="display: none;" class="formamount" id="myForm">
+            <label for="amount">Enter Amount:</label>
+            <input type="text" id="amount" name="amount" required>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $('#myForm').submit(function (event) {
+                event.preventDefault();
+
+                $('#overlay').fadeIn(); // Show overlay
+                var amount = $('input[name="amount"]').val();
+
+                // Submit the form asynchronously using AJAX
+                $.ajax({
+                    type: 'POST',
+                    url: '/amount',
+                    data: { amount: amount },
+                    success: function (response) {
+                        // $('#overlay').fadeOut(); // Hide overlay
+                        $('#loader').fadeOut(); // Hide overlay
+                        $('#overlay').fadeIn();
+                        var formattedResponse = response
+                        .replace(/\n/g, '<br>')
+                        .replace(/You have been approved for the amount of (\$\d+)/, 'You have been approved for the amount of:<strong>$1</strong>')
+                        .replace(/Amount: (\$\d+)/g, 'Amount: <strong>$1</strong>')
+                        .replace(/Start Date: (\d+-\d+-\d+)/g, 'Start Date: <strong>$1</strong>')
+                        .replace(/Final Request Decision: (Approved)/g, 'Final Request Decision: <strong>$1</strong>');
+
+                        $('#responseText').html(formattedResponse); // Set the formatted response
+                        $("#response").css("display", "block");
+                    },
+                    error: function () {
+                        $('#overlay').fadeOut(); // Hide overlay
+
+                        alert('An error occurred.');
+                    }
+                });
+            });
+
+            $(".btnyes").click(function () {
+                $(".formamount").css("display", "block");
+            });
+            $(".btnno").click(function () {
+                $(".formamount").css("display", "none");
+                window.location.href = "/";
+            });
+        });
+
+
+
+    </script>
+    <script>
+        $(document).ready(function(){
+          $("#close-pop").click(function(){
+            $("#overlay").hide();
+          });
+          $("#close-pops").click(function(){
+            $("#overlay").hide();
+          });
+        });
+        </script>
+        
+</body>
+
+</html>
